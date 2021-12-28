@@ -29,24 +29,14 @@ class DisplayStatus:
             if sdcard is not None:
                 progress = sdcard.get_status(eventtime)['progress']
         return { 'progress': progress, 'message': self.message }
-    def cmd_M73(self, params):
-        gcode = self.printer.lookup_object('gcode')
-        progress = gcode.get_float('P', params, 0.) / 100.
+    def cmd_M73(self, gcmd):
+        progress = gcmd.get_float('P', 0.) / 100.
         self.progress = min(1., max(0., progress))
         curtime = self.printer.get_reactor().monotonic()
         self.expire_progress = curtime + M73_TIMEOUT
-    def cmd_M117(self, params):
-        msg = params['#original']
-        umsg = msg.upper()
-        if not umsg.startswith('M117'):
-            # Parse out additional info if M117 recd during a print
-            start = umsg.find('M117')
-            end = msg.rfind('*')
-            msg = msg[start:end]
-        if len(msg) > 5:
-            self.message = msg[5:]
-        else:
-            self.message = None
+    def cmd_M117(self, gcmd):
+        msg = gcmd.get_raw_command_parameters() or None
+        self.message = msg
 
 def load_config(config):
     return DisplayStatus(config)
